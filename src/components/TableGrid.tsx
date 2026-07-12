@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useDatabaseStore } from '../store/useDatabaseStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, Plus, Trash2, Edit2, Check, X, Filter, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, Edit2, Check, X, Filter, ChevronLeft, ChevronRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
+
 
 export const TableGrid: React.FC = () => {
   const {
@@ -34,6 +35,11 @@ export const TableGrid: React.FC = () => {
   // New row insertion state
   const [isAddingRow, setIsAddingRow] = useState(false);
   const [newRowData, setNewRowData] = useState<Record<string, any>>({});
+  const [showNewRowPassword, setShowNewRowPassword] = useState<Record<string, boolean>>({});
+
+  // Password visibility grid state: Record<"rowIndex-columnName", boolean>
+  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
+
 
   // Filter UI state
   const [activeFilterColumn, setActiveFilterColumn] = useState<string | null>(null);
@@ -414,8 +420,30 @@ export const TableGrid: React.FC = () => {
                                 {fkOptions[fkRelation.referencedTable]?.find(opt => opt.value === row[col.name])?.label || String(row[col.name] ?? 'NULL')}
                               </span>
                             ) : (
-                              String(row[col.name] ?? 'NULL')
+                              col.name.toLowerCase().includes('password') && row[col.name] !== null && row[col.name] !== undefined ? (
+                                <div className="flex items-center justify-between gap-1.5 w-full">
+                                  <span className="font-mono">
+                                    {revealedPasswords[`${idx}-${col.name}`] 
+                                      ? String(row[col.name]) 
+                                      : '••••••••'}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setRevealedPasswords(prev => ({
+                                      ...prev,
+                                      [`${idx}-${col.name}`]: !prev[`${idx}-${col.name}`]
+                                    }))}
+                                    className="p-0.5 text-text-tertiary hover:text-text-secondary cursor-pointer"
+                                    title={revealedPasswords[`${idx}-${col.name}`] ? 'Hide value' : 'Show value'}
+                                  >
+                                    {revealedPasswords[`${idx}-${col.name}`] ? <EyeOff size={12} /> : <Eye size={12} />}
+                                  </button>
+                                </div>
+                              ) : (
+                                String(row[col.name] ?? 'NULL')
+                              )
                             )
+
                           )}
                         </td>
                       );
@@ -498,6 +526,26 @@ export const TableGrid: React.FC = () => {
                             </option>
                           ))}
                         </select>
+                      ) : col.name.toLowerCase().includes('password') ? (
+                        <div className="relative">
+                          <input
+                            type={showNewRowPassword[col.name] ? 'text' : 'password'}
+                            value={newRowData[col.name] ?? ''}
+                            onChange={(e) => setNewRowData({ ...newRowData, [col.name]: e.target.value === '' ? null : e.target.value })}
+                            className="w-full pl-3 pr-10 py-2 bg-bg-secondary border border-border-secondary rounded-lg text-xs font-mono"
+                            required={!col.isNullable}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewRowPassword(prev => ({
+                              ...prev,
+                              [col.name]: !prev[col.name]
+                            }))}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary cursor-pointer"
+                          >
+                            {showNewRowPassword[col.name] ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
                       ) : (
                         <input
                           type={col.type.includes('int') || col.type.includes('dec') ? 'number' : col.type.includes('date') || col.type.includes('time') ? 'date' : 'text'}
@@ -507,6 +555,7 @@ export const TableGrid: React.FC = () => {
                           required={!col.isNullable}
                         />
                       )}
+
                     </div>
                   );
                 })}

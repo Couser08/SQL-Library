@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDatabaseStore } from '../store/useDatabaseStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { Database, Search, Upload, LogOut, ChevronRight, RefreshCw, Plus, Check, X, Server, Info, Sparkles } from 'lucide-react';
+import { Database, Search, Upload, LogOut, RefreshCw, Plus, Check, X, Server, Info, Sparkles, Trash2 } from 'lucide-react';
 
 interface SidebarProps {
   onOpenImport: () => void;
@@ -20,7 +20,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImport, onOpenLaunchTour
     activeSchema,
     createSchema,
     setActiveSchema,
-    fetchSchemas
+    fetchSchemas,
+    executeSql
   } = useDatabaseStore();
   
   const { user, signOut } = useAuthStore();
@@ -47,6 +48,44 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImport, onOpenLaunchTour
       setNewDbName('');
     } else {
       setCreateDbError(true);
+    }
+  };
+
+  const handleDeleteTable = async (tableName: string) => {
+    if (!window.confirm(`Are you sure you want to drop table "${tableName}"? This will delete all its data.`)) {
+      return;
+    }
+    try {
+      const res = await executeSql(`DROP TABLE IF EXISTS "${tableName}" CASCADE;`);
+      if (res.success) {
+        if (selectedTable === tableName) {
+          setSelectedTable(null);
+        }
+        await fetchSchema();
+      } else {
+        alert(`Failed to drop table "${tableName}": ${res.error || 'Unknown error'}`);
+      }
+    } catch (err: any) {
+      alert(`An error occurred: ${err.message || err}`);
+    }
+  };
+
+  const handleDeleteAllTables = async () => {
+    if (tables.length === 0) return;
+    if (!window.confirm(`WARNING: Are you sure you want to drop ALL ${tables.length} tables in this database? This will completely clear your schema and data!`)) {
+      return;
+    }
+    try {
+      const dropQuery = tables.map(t => `DROP TABLE IF EXISTS "${t}" CASCADE;`).join('\n');
+      const res = await executeSql(dropQuery);
+      if (res.success) {
+        setSelectedTable(null);
+        await fetchSchema();
+      } else {
+        alert(`Failed to drop all tables: ${res.error || 'Unknown error'}`);
+      }
+    } catch (err: any) {
+      alert(`An error occurred: ${err.message || err}`);
     }
   };
 
@@ -149,8 +188,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImport, onOpenLaunchTour
 
       {/* Tables List */}
       <div className="flex-1 overflow-y-auto py-2.5 px-3.5 space-y-1">
-        <div className="text-[10px] font-bold text-text-tertiary px-3 uppercase tracking-wider mb-2">
-          Tables ({tables.length})
+        <div className="text-[10px] font-bold text-text-tertiary px-3 uppercase tracking-wider mb-2 flex items-center justify-between">
+          <span>Tables ({tables.length})</span>
+          {tables.length > 0 && (
+            <button 
+              onClick={handleDeleteAllTables}
+              title="Drop all tables" 
+              className="text-system-red hover:bg-system-red/10 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase transition-colors cursor-pointer"
+            >
+              Delete All
+            </button>
+          )}
         </div>
         {loadingSchema && tables.length === 0 ? (
           <div className="text-center py-4 text-xs text-text-secondary">Loading tables...</div>
@@ -160,21 +208,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImport, onOpenLaunchTour
           filteredTables.map((tableName) => {
             const isSelected = selectedTable === tableName;
             return (
-              <button
+              <div
                 key={tableName}
-                onClick={() => setSelectedTable(tableName)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-left cursor-pointer transition-all ${
+                className={`group w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   isSelected
                     ? 'bg-system-blue text-white shadow-sm'
                     : 'text-text-secondary hover:bg-bg-tertiary hover:text-text-primary'
                 }`}
               >
-                <div className="flex items-center gap-2 truncate">
+                <button
+                  onClick={() => setSelectedTable(tableName)}
+                  className="flex-1 flex items-center gap-2 truncate text-left cursor-pointer border-none bg-transparent font-medium text-inherit"
+                >
                   <Database size={13} className={isSelected ? 'text-white' : 'text-text-tertiary'} />
                   <span className="truncate font-mono">{tableName}</span>
-                </div>
-                <ChevronRight size={12} className={isSelected ? 'text-white' : 'text-text-tertiary opacity-0 group-hover:opacity-100'} />
-              </button>
+                </button>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteTable(tableName);
+                  }}
+                  title={`Drop table ${tableName}`}
+                  className={`p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer transition-opacity ${
+                    isSelected ? 'text-white' : 'text-system-red opacity-0 group-hover:opacity-100'
+                  }`}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
             )
           })
         )}

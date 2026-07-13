@@ -133,11 +133,19 @@ export function translateCreateTable(statement: string): { query: string; name: 
 
     const dependencies: string[] = [];
 
+    // Delete MySQL table options (ENGINE, CHARSET, COLLATE)
+    delete ast.table_options;
+
     // 2. Transform AST nodes for Postgres compatibility
     if (ast.create_definitions) {
       for (const def of ast.create_definitions) {
         // Handle columns
         if (def.resource === 'column') {
+          // Remove UNSIGNED keyword from column suffix if present
+          if (Array.isArray(def.definition.suffix)) {
+            def.definition.suffix = def.definition.suffix.filter((s: any) => String(s).toUpperCase() !== 'UNSIGNED') as any;
+          }
+
           // Map column types
           let type = def.definition.dataType.toUpperCase();
           if (type === 'INT' || type === 'INTEGER') {

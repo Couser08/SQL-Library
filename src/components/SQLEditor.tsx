@@ -4,6 +4,8 @@ import type { Monaco } from '@monaco-editor/react';
 import { useDatabaseStore } from '../store/useDatabaseStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, AlertTriangle, Clock, Download } from 'lucide-react';
+import { translateSqlFile } from '../lib/sqlTranslator';
+
 
 
 export const SQLEditor: React.FC = () => {
@@ -124,7 +126,32 @@ export const SQLEditor: React.FC = () => {
     setResults(null);
     setRowsAffected(null);
 
-    const res = await executeSql(sqlToRun);
+    let queryToExecute = sqlToRun;
+    const isCreateOrInsert = /^\s*(CREATE\s+TABLE|INSERT\s+INTO)/i.test(sqlToRun);
+    
+    if (isCreateOrInsert) {
+      try {
+        const transResult = translateSqlFile(sqlToRun);
+        if (transResult.tables && transResult.tables.length > 0) {
+          const queries = transResult.tables.map(t => {
+            let q = t.createQuery;
+            if (t.insertQueries && t.insertQueries.length > 0) {
+              q += '\n' + t.insertQueries.join('\n');
+            }
+            return q;
+          });
+          if (queries.length > 0) {
+            queryToExecute = queries.join('\n');
+          }
+        }
+      } catch (err) {
+        console.warn('SQL editor DDL translation failed, using raw query:', err);
+      }
+    } else {
+      queryToExecute = sqlToRun.replace(/`/g, '"');
+    }
+
+    const res = await executeSql(queryToExecute);
     if (res.success) {
       setResults(res.data || []);
       setRowsAffected(res.rowsAffected ?? null);

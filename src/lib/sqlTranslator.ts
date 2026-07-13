@@ -4,6 +4,10 @@
  * and handles topological sorting based on Foreign Key dependencies.
  */
 
+import pkg from 'node-sql-parser';
+const { Parser } = pkg;
+
+
 export interface ParsedTable {
   name: string;
   createQuery: string;
@@ -112,6 +116,140 @@ function extractTableName(statement: string): string | null {
  * Translates a MySQL CREATE TABLE statement to PostgreSQL syntax.
  */
 export function translateCreateTable(statement: string): { query: string; name: string; dependencies: string[] } | null {
+  const parser = new Parser();
+  try {
+    // 1. Clean statement and parse using MySQL dialect
+    // Convert any double quotes to backticks so the MySQL parser recognizes them as identifiers
+    const mysqlStatement = statement.replace(/"/g, '`');
+    const astList = parser.astify(mysqlStatement, { database: 'mysql' });
+    const ast = Array.isArray(astList) ? astList[0] : astList;
+    
+    if (!ast || ast.type !== 'create' || ast.keyword !== 'table') {
+      return translateCreateTableRegex(statement);
+    }
+
+    const tableName = Array.isArray(ast.table) ? ast.table[0].table : (ast.table as any).table || extractTableName(statement);
+    if (!tableName) return translateCreateTableRegex(statement);
+
+    const dependencies: string[] = [];
+
+    // 2. Transform AST nodes for Postgres compatibility
+    if (ast.create_definitions) {
+      for (const def of ast.create_definitions) {
+        // Handle columns
+        if (def.resource === 'column') {
+          // Map column types
+          let type = def.definition.dataType.toUpperCase();
+          if (type === 'INT' || type === 'INTEGER') {
+            type = 'INTEGER';
+          } else if (type === 'TINYINT') {
+            if (def.definition.length === 1) {
+              type = 'BOOLEAN';
+            } else {
+              type = 'SMALLINT';
+            }
+          } else if (type === 'SMALLINT' || type === 'MEDIUMINT') {
+            type = (type === 'MEDIUMINT') ? 'INTEGER' : 'SMALLINT';
+          } else if (type === 'BIGINT') {
+            type = 'BIGINT';
+          } else if (type === 'DATETIME' || type === 'TIMESTAMP') {
+            type = 'TIMESTAMP';
+          } else if (type === 'DOUBLE') {
+            type = 'DOUBLE PRECISION';
+          } else if (type === 'FLOAT') {
+            type = 'REAL';
+          } else if (type === 'LONGTEXT' || type === 'MEDIUMTEXT' || type === 'TINYTEXT' || type === 'ENUM') {
+            type = 'TEXT';
+          }
+
+          def.definition.dataType = type;
+
+          // Strip length, scale, parentheses for types that do not support them in Postgres
+          const allowedConstraints = ['VARCHAR', 'CHAR', 'DECIMAL', 'NUMERIC', 'DOUBLE PRECISION', 'REAL'];
+          if (!allowedConstraints.includes(type)) {
+            delete def.definition.length;
+            delete def.definition.scale;
+            delete def.definition.parentheses;
+          }
+
+          // Handle AUTO_INCREMENT -> Postgres SERIAL / BIGSERIAL
+          if (def.auto_increment === 'auto_increment') {
+            if (type === 'BIGINT') {
+              def.definition.dataType = 'BIGSERIAL';
+            } else {
+              def.definition.dataType = 'SERIAL';
+            }
+            delete def.auto_increment;
+          }
+
+          // Handle Default values
+          if (def.default_val) {
+            const val = def.default_val.value;
+            if (val) {
+              // Convert function defaults (like CURRENT_TIMESTAMP, CURRENT_TIMESTAMP(), now(), utc_timestamp())
+              if (val.type === 'function') {
+                const funcName = Array.isArray(val.name?.name)
+                  ? val.name?.name?.[0]?.value?.toUpperCase()
+                  : String(val.name || '').toUpperCase();
+                
+                if (funcName === 'CURRENT_TIMESTAMP' || funcName === 'CURRENT_DATE' || funcName === 'CURRENT_TIME' || funcName === 'UTC_TIMESTAMP') {
+                  const targetFunc = funcName === 'UTC_TIMESTAMP' ? 'CURRENT_TIMESTAMP' : funcName;
+                  def.default_val.value = {
+                    type: 'origin',
+                    value: targetFunc
+                  };
+                }
+              }
+              // Convert boolean defaults (1 -> true, 0 -> false)
+              if (type === 'BOOLEAN') {
+                const rawVal = val.value;
+                if (rawVal === 1 || rawVal === '1' || rawVal === true || String(rawVal).toLowerCase() === 'true') {
+                  def.default_val.value = {
+                    type: 'bool',
+                    value: true
+                  };
+                } else if (rawVal === 0 || rawVal === '0' || rawVal === false || String(rawVal).toLowerCase() === 'false') {
+                  def.default_val.value = {
+                    type: 'bool',
+                    value: false
+                  };
+                }
+              }
+            }
+            // Strip MySQL "ON UPDATE CURRENT_TIMESTAMP" clause
+            if (def.default_val.value && def.default_val.value.over) {
+              delete def.default_val.value.over;
+            }
+          }
+        }
+
+        // Handle Foreign Keys
+        if (def.resource === 'constraint' && def.constraint_type === 'FOREIGN KEY') {
+          const refTable = def.reference_definition?.table?.[0]?.table;
+          if (refTable && refTable !== tableName && !dependencies.includes(refTable)) {
+            dependencies.push(refTable);
+          }
+        }
+      }
+    }
+
+    // 3. Compile back to Postgres DDL
+    const pgSql = parser.sqlify(ast, { database: 'postgresql' });
+    return {
+      query: pgSql,
+      name: tableName,
+      dependencies
+    };
+  } catch (err: any) {
+    console.warn(`AST DDL translation failed, falling back to regex: ${err.message}`);
+    return translateCreateTableRegex(statement);
+  }
+}
+
+/**
+ * Fallback regex-based translator for CREATE TABLE statements.
+ */
+function translateCreateTableRegex(statement: string): { query: string; name: string; dependencies: string[] } | null {
   const name = extractTableName(statement);
   if (!name) return null;
 

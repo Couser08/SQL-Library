@@ -176,11 +176,18 @@ export function translateCreateTable(statement: string): { query: string; name: 
     // Remove UNSIGNED keyword (Postgres does not support unsigned types)
     cleanLine = cleanLine.replace(/\bUNSIGNED\b/ig, '');
 
-    // Remove MySQL's ON UPDATE current_timestamp() (Postgres does not support inline ON UPDATE column constraints)
-    cleanLine = cleanLine.replace(/\bON\s+UPDATE\s+[a-zA-Z0-9_]+(?:\(\))?\b/ig, '');
+    // Remove MySQL's ON UPDATE constraints (Postgres does not support inline ON UPDATE column constraints)
+    // Matches: ON UPDATE CURRENT_TIMESTAMP, ON UPDATE CURRENT_TIMESTAMP(), ON UPDATE CURRENT_TIMESTAMP (), ON UPDATE CURRENT_TIMESTAMP(3), etc.
+    cleanLine = cleanLine.replace(/\bON\s+UPDATE\s+[a-zA-Z0-9_]+(?:\s*\([^)]*\))?\b/ig, '');
 
-    // Replace current_timestamp() with CURRENT_TIMESTAMP (without parentheses for Postgres compatibility)
-    cleanLine = cleanLine.replace(/\bcurrent_timestamp\(\)/ig, 'CURRENT_TIMESTAMP');
+    // Replace current_timestamp with optional spaces/arguments with CURRENT_TIMESTAMP (for Postgres compatibility)
+    // Matches: current_timestamp(), current_timestamp (), current_timestamp(3), current_timestamp (6), etc.
+    cleanLine = cleanLine.replace(/\bcurrent_timestamp\s*\(\s*\d*\s*\)/ig, 'CURRENT_TIMESTAMP');
+
+    // Replace other common time functions with Postgres equivalents
+    cleanLine = cleanLine.replace(/\bcurrent_date\s*\(\s*\)/ig, 'CURRENT_DATE');
+    cleanLine = cleanLine.replace(/\bcurrent_time\s*\(\s*\)/ig, 'CURRENT_TIME');
+    cleanLine = cleanLine.replace(/\butc_timestamp\s*\(\s*\d*\s*\)/ig, 'CURRENT_TIMESTAMP');
 
     // Replace inline enum(...) with text (Postgres doesn't support inline enum definitions in CREATE TABLE)
     cleanLine = cleanLine.replace(/\benum\s*\([^)]+\)/ig, 'text');

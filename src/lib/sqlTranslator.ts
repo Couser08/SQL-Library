@@ -431,7 +431,9 @@ export function translateInsert(statement: string, booleanColumns: string[] = []
   // Try using AST parser for precise boolean mapping
   const parser = new Parser();
   try {
-    const astList = parser.astify(pgQuery, { database: 'mysql' });
+    // Convert double quotes to backticks so the MySQL parser recognizes them as identifiers
+    const mysqlQuery = pgQuery.replace(/"/g, '`');
+    const astList = parser.astify(mysqlQuery, { database: 'mysql' });
     const ast = Array.isArray(astList) ? astList[0] : astList;
     
     if (ast && ast.type === 'insert' && ast.columns && ast.values && booleanColumns.length > 0) {

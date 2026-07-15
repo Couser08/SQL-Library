@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDatabaseStore } from '../store/useDatabaseStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, Plus, Trash2, Edit2, Check, X, Filter, ChevronLeft, ChevronRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
-
+import { ChevronDown, ChevronUp, Plus, Trash2, Edit2, Check, X, Filter, ChevronLeft, ChevronRight, AlertCircle, Eye, EyeOff, Database } from 'lucide-react';
 
 export const TableGrid: React.FC = () => {
   const {
@@ -198,14 +197,19 @@ export const TableGrid: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-bg-primary select-text">
-      {/* Top Action Bar */}
-      <div className="px-6 py-3 border-b border-border-secondary flex items-center justify-between bg-bg-secondary/20">
+    <div className="flex-1 flex flex-col min-w-0 bg-bg-primary select-text p-6 space-y-6">
+      {/* Top Header Card */}
+      <div className="flex items-center justify-between bg-bg-secondary/15 backdrop-blur-md border border-border-secondary/60 rounded-2xl p-5 shadow-xs">
         <div className="flex items-center gap-3">
-          <h2 className="text-sm font-bold text-text-primary font-mono">{selectedTable}</h2>
-          <span className="text-[10px] text-text-secondary bg-bg-tertiary px-2 py-0.5 rounded-full">
-            {gridTotalRows} rows
-          </span>
+          <div className="p-2.5 bg-system-blue/10 text-system-blue rounded-xl border border-system-blue/15 shadow-inner">
+            <Database size={18} />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-text-primary tracking-tight font-mono">{selectedTable}</h2>
+            <p className="text-[10px] text-text-secondary mt-0.5 font-medium">
+              Active table containing <span className="text-text-primary font-bold">{gridTotalRows}</span> records
+            </p>
+          </div>
         </div>
         <button
           onClick={() => {
@@ -213,18 +217,19 @@ export const TableGrid: React.FC = () => {
             setValidationError(null);
             setNewRowData({});
           }}
-          className="px-3 py-1.5 bg-system-blue hover:bg-system-blue/90 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer transition-colors"
+          className="px-4 py-2 bg-system-blue hover:bg-system-blue/90 text-white text-xs font-semibold rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all border-none"
         >
           <Plus size={14} />
           <span>Add Row</span>
         </button>
       </div>
 
-      {/* Grid Container */}
-      <div className="flex-1 overflow-auto relative">
-        <table className="w-full text-left border-collapse">
-          <thead className="sticky top-0 bg-bg-secondary/95 backdrop-blur-xs z-20 border-b border-border-secondary shadow-[0_1px_0_0_rgba(0,0,0,0.08)]">
-            <tr>
+      {/* Modern Grid Card Container */}
+      <div className="flex-1 overflow-auto relative rounded-2xl border border-border-secondary/60 bg-bg-secondary/10 shadow-lg min-h-0 flex flex-col">
+        <div className="flex-1 overflow-auto relative">
+          <table className="w-full text-left border-collapse min-w-max">
+            <thead className="sticky top-0 bg-bg-secondary/95 backdrop-blur-xs z-20 border-b border-border-secondary shadow-[0_1px_0_0_rgba(0,0,0,0.08)]">
+              <tr>
               <th className="p-3 w-14 text-center text-[10px] font-bold text-text-tertiary uppercase select-none bg-bg-secondary/50">Actions</th>
               {columns.map((col) => {
                 const isPk = primaryKeys.includes(col.name);
@@ -368,34 +373,37 @@ export const TableGrid: React.FC = () => {
                 const isEditing = editingRowIndex === idx;
 
                 return (
-                  <tr key={idx} className="hover:bg-bg-secondary/25 odd:bg-bg-secondary/5 transition-colors text-xs font-mono">
-                    <td className="p-2 border-r border-border-secondary/60 text-center space-x-1 shrink-0 flex items-center justify-center bg-bg-secondary/10">
-                      {isEditing ? (
-                        <>
-                          <button onClick={() => handleSaveEdit(idx)} className="p-1 text-system-green hover:bg-green-500/10 rounded cursor-pointer transition-colors" title="Save changes">
-                            <Check size={14} />
-                          </button>
-                          <button onClick={() => setEditingRowIndex(null)} className="p-1 text-system-red hover:bg-red-500/10 rounded cursor-pointer transition-colors" title="Cancel edit">
-                            <X size={14} />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button onClick={() => handleStartEdit(idx, row)} className="p-1 text-text-secondary hover:text-system-blue rounded cursor-pointer transition-colors">
-                            <Edit2 size={13} />
-                          </button>
-                          <button onClick={() => handleDelete(row)} className="p-1 text-text-secondary hover:text-system-red rounded cursor-pointer transition-colors">
-                            <Trash2 size={13} />
-                          </button>
-                        </>
-                      )}
+                  <tr key={idx} className="hover:bg-bg-secondary/25 odd:bg-bg-secondary/5 transition-colors text-xs font-mono border-b border-border-secondary/30 last:border-0 group">
+                    <td className="p-3 border-r border-border-secondary/60 text-center sticky left-0 z-10 bg-bg-secondary/95 dark:bg-bg-primary/95 backdrop-blur-xs select-none w-20 shadow-[2px_0_5px_0_rgba(0,0,0,0.06)]">
+                      <div className="flex items-center justify-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity duration-150">
+                        {isEditing ? (
+                          <>
+                            <button onClick={() => handleSaveEdit(idx)} className="p-1 text-system-green hover:bg-system-green/10 rounded-lg cursor-pointer transition-all border-none bg-transparent" title="Save changes">
+                              <Check size={13} />
+                            </button>
+                            <button onClick={() => setEditingRowIndex(null)} className="p-1 text-system-red hover:bg-system-red/10 rounded-lg cursor-pointer transition-all border-none bg-transparent" title="Cancel edit">
+                              <X size={13} />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => handleStartEdit(idx, row)} className="p-1 text-text-secondary hover:text-system-blue hover:bg-bg-primary rounded-lg cursor-pointer transition-all border-none bg-transparent" title="Edit row">
+                              <Edit2 size={12} />
+                            </button>
+                            <button onClick={() => handleDelete(row)} className="p-1 text-text-secondary hover:text-system-red hover:bg-bg-primary rounded-lg cursor-pointer transition-all border-none bg-transparent" title="Delete row">
+                              <Trash2 size={12} />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
 
                     {columns.map((col) => {
                       const fkRelation = activeSchema.foreignKeys.find(f => f.columnName === col.name);
+                      const isBoolVal = col.type.toLowerCase().includes('bool') || col.name.toLowerCase().startsWith('is_') || col.name.toLowerCase().startsWith('has_') || typeof row[col.name] === 'boolean';
                       
                       return (
-                        <td key={col.name} className="p-3 border-r border-border-secondary/30 max-w-[250px] min-w-[160px] truncate text-text-secondary">
+                        <td key={col.name} className="p-3.5 border-r border-border-secondary/30 max-w-[250px] min-w-[160px] truncate text-text-secondary align-middle">
                           {isEditing ? (
                             fkRelation ? (
                               // Searchable Foreign Key Dropdown
@@ -424,37 +432,48 @@ export const TableGrid: React.FC = () => {
                             fkRelation ? (
                               // Display Label as a pill instead of ID
                               row[col.name] === null ? (
-                                <span className="text-text-tertiary italic">NULL</span>
+                                <span className="text-text-tertiary select-none font-sans font-medium text-[11px]">&mdash;</span>
                               ) : (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded bg-system-blue/10 text-system-blue font-sans text-[10px] font-bold border border-system-blue/15 shadow-xs">
                                   {fkOptions[fkRelation.referencedTable]?.find(opt => opt.value === row[col.name])?.label || String(row[col.name])}
                                 </span>
                               )
-                            ) : (
-                              col.name.toLowerCase().includes('password') && row[col.name] !== null && row[col.name] !== undefined ? (
-                                <div className="flex items-center justify-between gap-1.5 w-full">
-                                  <span className="font-mono text-text-secondary select-all">
-                                    {revealedPasswords[`${idx}-${col.name}`] 
-                                      ? String(row[col.name]) 
-                                      : '••••••••'}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => setRevealedPasswords(prev => ({
-                                      ...prev,
-                                      [`${idx}-${col.name}`]: !prev[`${idx}-${col.name}`]
-                                    }))}
-                                    className="p-0.5 text-text-tertiary hover:text-text-secondary cursor-pointer transition-colors"
-                                    title={revealedPasswords[`${idx}-${col.name}`] ? 'Hide value' : 'Show value'}
-                                  >
-                                    {revealedPasswords[`${idx}-${col.name}`] ? <EyeOff size={11} /> : <Eye size={11} />}
-                                  </button>
-                                </div>
-                              ) : row[col.name] === null || row[col.name] === undefined ? (
-                                <span className="text-text-tertiary italic">NULL</span>
+                            ) : isBoolVal && row[col.name] !== null && row[col.name] !== undefined ? (
+                              // Render truthy/falsy booleans as clean status dots
+                              row[col.name] === true || row[col.name] === 'true' || row[col.name] === 1 || row[col.name] === '1' ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-sans text-[10px] font-bold border border-emerald-500/15 shadow-2xs select-none">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  true
+                                </span>
                               ) : (
-                                String(row[col.name])
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 font-sans text-[10px] font-bold border border-rose-500/15 shadow-2xs select-none">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                  false
+                                </span>
                               )
+                            ) : col.name.toLowerCase().includes('password') && row[col.name] !== null && row[col.name] !== undefined ? (
+                              <div className="flex items-center justify-between gap-1.5 w-full">
+                                <span className="font-mono text-text-secondary select-all">
+                                  {revealedPasswords[`${idx}-${col.name}`] 
+                                    ? String(row[col.name]) 
+                                    : '••••••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setRevealedPasswords(prev => ({
+                                    ...prev,
+                                    [`${idx}-${col.name}`]: !prev[`${idx}-${col.name}`]
+                                  }))}
+                                  className="p-0.5 text-text-tertiary hover:text-text-secondary cursor-pointer transition-colors"
+                                  title={revealedPasswords[`${idx}-${col.name}`] ? 'Hide value' : 'Show value'}
+                                >
+                                  {revealedPasswords[`${idx}-${col.name}`] ? <EyeOff size={11} /> : <Eye size={11} />}
+                                </button>
+                              </div>
+                            ) : row[col.name] === null || row[col.name] === undefined ? (
+                              <span className="text-text-tertiary select-none font-sans font-medium text-[11px]">&mdash;</span>
+                            ) : (
+                              String(row[col.name])
                             )
                           )}
                         </td>
@@ -476,10 +495,37 @@ export const TableGrid: React.FC = () => {
         </div>
       )}
 
+      {/* Pagination Footer inside Table Card */}
+      <div className="px-6 py-3.5 border-t border-border-secondary/60 flex items-center justify-between bg-bg-secondary/15 select-none rounded-b-2xl">
+        <div className="text-[10px] text-text-secondary font-medium">
+          Showing {Math.min(gridRows.length, 1)} to {gridRows.length} of {gridTotalRows} rows
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setGridPage(gridPage - 1)}
+            disabled={gridPage === 1 || loadingData}
+            className="p-1 rounded-lg border border-border-secondary/60 bg-bg-primary text-text-secondary disabled:opacity-40 hover:bg-bg-secondary cursor-pointer transition-all"
+          >
+            <ChevronLeft size={13} />
+          </button>
+          <span className="text-[11px] px-2 text-text-secondary font-medium font-sans">
+            Page {gridPage} of {Math.max(1, Math.ceil(gridTotalRows / gridLimit))}
+          </span>
+          <button
+            onClick={() => setGridPage(gridPage + 1)}
+            disabled={gridPage * gridLimit >= gridTotalRows || loadingData}
+            className="p-1 rounded-lg border border-border-secondary/60 bg-bg-primary text-text-secondary disabled:opacity-40 hover:bg-bg-secondary cursor-pointer transition-all"
+          >
+            <ChevronRight size={13} />
+          </button>
+        </div>
+      </div>
+    </div> {/* Closes Modern Grid Card Container */}
+
       {/* Slide-over Form to Add Row */}
       <AnimatePresence>
         {isAddingRow && (
-          <div className="fixed inset-0 z-50 flex justify-end bg-black/35 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-xs">
             <motion.form
               onSubmit={handleAddRowSubmit}
               initial={{ x: '100%' }}
@@ -491,8 +537,8 @@ export const TableGrid: React.FC = () => {
               {/* Form Header */}
               <div className="p-5 border-b border-border-secondary flex items-center justify-between bg-bg-secondary/40">
                 <h3 className="text-sm font-bold text-text-primary">Add Row to {selectedTable}</h3>
-                <button type="button" onClick={() => setIsAddingRow(false)} className="p-1 rounded hover:bg-bg-tertiary text-text-secondary cursor-pointer">
-                  <X size={16} />
+                <button type="button" onClick={() => setIsAddingRow(false)} className="p-1.5 rounded-lg hover:bg-bg-tertiary text-text-secondary cursor-pointer transition-colors border-none bg-transparent">
+                  <X size={15} />
                 </button>
               </div>
 
@@ -505,8 +551,8 @@ export const TableGrid: React.FC = () => {
 
                   if (isAutoIncrement && isPk) {
                     return (
-                      <div key={col.name} className="text-xs">
-                        <label className="block text-text-secondary font-semibold uppercase tracking-wider mb-1">{col.name}</label>
+                      <div key={col.name} className="text-xs space-y-1">
+                        <label className="block text-text-secondary font-bold uppercase tracking-wider text-[9px]">{col.name}</label>
                         <input
                           disabled
                           type="text"
@@ -518,18 +564,18 @@ export const TableGrid: React.FC = () => {
                   }
 
                   return (
-                    <div key={col.name} className="text-xs">
-                      <label className="block text-text-secondary font-semibold uppercase tracking-wider mb-1 flex items-center gap-1">
+                    <div key={col.name} className="text-xs space-y-1">
+                      <label className="block text-text-secondary font-bold uppercase tracking-wider text-[9px] flex items-center gap-1">
                         <span>{col.name}</span>
                         {!col.isNullable && <span className="text-system-red">*</span>}
-                        {isPk && <span className="text-[10px] text-system-blue">(Primary Key)</span>}
+                        {isPk && <span className="text-[9px] text-system-blue normal-case font-medium">(Primary Key)</span>}
                       </label>
 
                       {fkRelation ? (
                         <select
                           value={newRowData[col.name] ?? ''}
                           onChange={(e) => setNewRowData({ ...newRowData, [col.name]: e.target.value || null })}
-                          className="w-full px-3 py-2 bg-bg-secondary border border-border-secondary rounded-lg text-xs"
+                          className="w-full px-3 py-2 bg-bg-secondary border border-border-secondary rounded-lg text-xs focus:outline-none focus:border-system-blue focus:ring-1 focus:ring-system-blue"
                         >
                           <option value="">Select referenced row...</option>
                           {(fkOptions[fkRelation.referencedTable] || []).map((opt) => (
@@ -544,7 +590,7 @@ export const TableGrid: React.FC = () => {
                             type={showNewRowPassword[col.name] ? 'text' : 'password'}
                             value={newRowData[col.name] ?? ''}
                             onChange={(e) => setNewRowData({ ...newRowData, [col.name]: e.target.value === '' ? null : e.target.value })}
-                            className="w-full pl-3 pr-10 py-2 bg-bg-secondary border border-border-secondary rounded-lg text-xs font-mono"
+                            className="w-full pl-3 pr-10 py-2 bg-bg-secondary border border-border-secondary rounded-lg text-xs font-mono focus:outline-none focus:border-system-blue focus:ring-1 focus:ring-system-blue"
                             required={!col.isNullable}
                           />
                           <button
@@ -553,7 +599,7 @@ export const TableGrid: React.FC = () => {
                               ...prev,
                               [col.name]: !prev[col.name]
                             }))}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary cursor-pointer"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary cursor-pointer border-none bg-transparent"
                           >
                             {showNewRowPassword[col.name] ? <EyeOff size={14} /> : <Eye size={14} />}
                           </button>
@@ -563,11 +609,10 @@ export const TableGrid: React.FC = () => {
                           type={col.type.includes('int') || col.type.includes('dec') ? 'number' : col.type.includes('date') || col.type.includes('time') ? 'date' : 'text'}
                           value={newRowData[col.name] ?? ''}
                           onChange={(e) => setNewRowData({ ...newRowData, [col.name]: e.target.value === '' ? null : e.target.value })}
-                          className="w-full px-3 py-2 bg-bg-secondary border border-border-secondary rounded-lg text-xs font-mono"
+                          className="w-full px-3 py-2 bg-bg-secondary border border-border-secondary rounded-lg text-xs font-mono focus:outline-none focus:border-system-blue focus:ring-1 focus:ring-system-blue"
                           required={!col.isNullable}
                         />
                       )}
-
                     </div>
                   );
                 })}
@@ -584,7 +629,7 @@ export const TableGrid: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-system-blue hover:bg-system-blue/90 text-white text-xs font-semibold rounded-lg cursor-pointer transition-colors shadow-sm"
+                  className="px-4 py-2 bg-system-blue hover:bg-system-blue/90 text-white text-xs font-semibold rounded-lg cursor-pointer transition-colors shadow-sm border-none animate-fade-in"
                 >
                   Save Row
                 </button>
@@ -593,30 +638,6 @@ export const TableGrid: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
-
-      {/* Pagination Footer */}
-      <div className="px-6 py-3 border-t border-border-secondary flex items-center justify-between bg-bg-secondary/20 select-none">
-        <div className="text-[10px] text-text-secondary">
-          Showing {Math.min(gridRows.length, 1)} to {gridRows.length} of {gridTotalRows} rows
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setGridPage(gridPage - 1)}
-            disabled={gridPage === 1 || loadingData}
-            className="p-1 rounded border border-border-secondary bg-bg-primary text-text-secondary disabled:opacity-40 hover:bg-bg-secondary cursor-pointer transition-colors"
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <span className="text-xs px-2 text-text-secondary">Page {gridPage} of {Math.max(1, Math.ceil(gridTotalRows / gridLimit))}</span>
-          <button
-            onClick={() => setGridPage(gridPage + 1)}
-            disabled={gridPage * gridLimit >= gridTotalRows || loadingData}
-            className="p-1 rounded border border-border-secondary bg-bg-primary text-text-secondary disabled:opacity-40 hover:bg-bg-secondary cursor-pointer transition-colors"
-          >
-            <ChevronRight size={14} />
-          </button>
-        </div>
-      </div>
     </div>
   );
 };

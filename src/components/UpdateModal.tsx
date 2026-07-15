@@ -9,24 +9,24 @@ interface UpdateModalProps {
 export const UpdateModal: React.FC<UpdateModalProps> = ({ onClose }) => {
   const newFeatures = [
     {
-      title: 'AST-Based SQL Translator',
-      desc: 'Robust MySQL-to-PostgreSQL syntax translator powered by a real AST parser, fixing all syntax and parameter format errors.'
+      title: 'Individual Table Deletions',
+      desc: 'Hover over any table in the sidebar list to reveal a red trash icon and drop that specific table cascade.'
     },
     {
-      title: 'Dynamic Database Contexts',
-      desc: 'Support for multiple databases (schemas) visually within the app, isolating your tables and SQL imports.'
+      title: 'Bulk Database Reset',
+      desc: 'Added a quick "Delete All" action link next to the Tables header in the sidebar to drop all tables at once.'
     },
     {
-      title: 'Collapsible Sidebar Panels',
-      desc: 'Clean left navigation and right SQL history sidebars that can be collapsed to maximize workspace area.'
+      title: 'Smart Boolean Insert Casting',
+      desc: 'A new two-pass translator discovers boolean column definitions and dynamically converts integer 1/0 inserts to true/false booleans.'
     },
     {
-      title: 'Password Reveal Toggles',
-      desc: 'Secure password field masking with one-click eye icon toggles in both the login screen and data grid view.'
+      title: 'SQL Parser Parentheses Fix',
+      desc: 'Cleans up trailing parentheses syntax errors and handles fractional timestamp/date defaults during MySQL to Postgres translation.'
     },
     {
-      title: 'Table Grid Scrollbars',
-      desc: 'Enhanced scrollable results pane with sticky headers and responsive column scrollbars for large query datasets.'
+      title: 'Light Mode Login Redesign',
+      desc: 'A redesigned authentication card featuring a split-screen high-contrast light theme with 3D database graphics.'
     }
   ];
 
@@ -45,7 +45,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ onClose }) => {
             <Sparkles size={22} className="animate-pulse" />
           </div>
           <h2 className="text-base font-bold tracking-tight text-text-primary">Software Update Successful</h2>
-          <p className="text-xs text-text-secondary mt-1">Version 1.3.0 is now live with stability fixes</p>
+          <p className="text-xs text-text-secondary mt-1">Version 1.4.0 is now live with stability fixes</p>
         </div>
 
         {/* Feature List */}

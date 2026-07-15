@@ -46,7 +46,7 @@ const App: React.FC = () => {
   // Auto-open update popup once on version update / launch
   useEffect(() => {
     if (user) {
-      const CURRENT_VERSION = '1.3.0';
+      const CURRENT_VERSION = '1.4.0';
       const lastSeenVersion = localStorage.getItem('sql_manager_version');
       if (lastSeenVersion !== CURRENT_VERSION) {
         setIsUpdateOpen(true);
@@ -55,7 +55,7 @@ const App: React.FC = () => {
   }, [user]);
 
   const handleCloseUpdate = () => {
-    localStorage.setItem('sql_manager_version', '1.3.0');
+    localStorage.setItem('sql_manager_version', '1.4.0');
     setIsUpdateOpen(false);
   };
 

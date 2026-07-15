@@ -67,6 +67,7 @@ interface DatabaseState {
   insertRow: (tableName: string, rowValues: Record<string, any>) => Promise<boolean>;
   executeSql: (query: string) => Promise<{ success: boolean; data?: any[]; rowsAffected?: number; error?: string }>;
   setGridPage: (page: number) => void;
+  setGridLimit: (limit: number) => void;
   setGridFilters: (filters: Record<string, any>) => void;
   setGridSort: (sort: { column: string; direction: 'ASC' | 'DESC' } | null) => void;
   addHistoryItem: (query: string, success: boolean, rowsAffected?: number, error?: string) => void;
@@ -452,6 +453,11 @@ export const useDatabaseStore = create<DatabaseState>((set, get) => ({
 
   setGridSort: (sort) => {
     set({ gridSort: sort, gridPage: 1 });
+    get().fetchTableData();
+  },
+
+  setGridLimit: (limit) => {
+    set({ gridLimit: limit, gridPage: 1 });
     get().fetchTableData();
   },
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useDatabaseStore } from '../store/useDatabaseStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, Plus, Trash2, Edit2, Check, X, Filter, ChevronLeft, ChevronRight, AlertCircle, Eye, EyeOff, Database } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Filter, ChevronLeft, ChevronRight, AlertCircle, Eye, EyeOff, Database, Search, ArrowUpDown } from 'lucide-react';
 
 export const TableGrid: React.FC = () => {
-  const {
+   const {
     selectedTable,
     schema,
     gridRows,
@@ -18,6 +18,7 @@ export const TableGrid: React.FC = () => {
     deleteRow,
     insertRow,
     setGridPage,
+    setGridLimit,
     setGridFilters,
     setGridSort,
     executeSql
@@ -38,6 +39,7 @@ export const TableGrid: React.FC = () => {
 
   // Password visibility grid state: Record<"rowIndex-columnName", boolean>
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
+  const [searchQuery, setSearchQuery] = useState('');
 
 
   // Filter UI state
@@ -196,17 +198,24 @@ export const TableGrid: React.FC = () => {
     }
   };
 
+  const filteredRows = gridRows.filter((row) => {
+    if (!searchQuery) return true;
+    return Object.values(row).some((val) =>
+      String(val ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-bg-primary select-text p-6 space-y-6">
+    <div className="flex-1 flex flex-col min-w-0 bg-[#f8fafc] dark:bg-bg-primary select-text p-6 space-y-6">
       {/* Top Header Card */}
-      <div className="flex items-center justify-between bg-bg-secondary/15 backdrop-blur-md border border-border-secondary/60 rounded-2xl p-5 shadow-xs">
+      <div className="flex items-center justify-between bg-white dark:bg-bg-secondary/15 backdrop-blur-md border border-gray-100 dark:border-border-secondary/60 rounded-2xl p-5 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-system-blue/10 text-system-blue rounded-xl border border-system-blue/15 shadow-inner">
-            <Database size={18} />
+          <div className="p-2.5 bg-system-blue/10 text-system-blue rounded-xl border border-system-blue/15 flex items-center justify-center shrink-0">
+            <Database size={20} />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-text-primary tracking-tight font-mono">{selectedTable}</h2>
-            <p className="text-[10px] text-text-secondary mt-0.5 font-medium">
+            <h2 className="text-base font-bold text-text-primary tracking-tight font-sans">{selectedTable}</h2>
+            <p className="text-[11px] text-text-secondary mt-0.5 font-medium font-sans">
               Active table containing <span className="text-text-primary font-bold">{gridTotalRows}</span> records
             </p>
           </div>
@@ -217,7 +226,7 @@ export const TableGrid: React.FC = () => {
             setValidationError(null);
             setNewRowData({});
           }}
-          className="px-4 py-2 bg-system-blue hover:bg-system-blue/90 text-white text-xs font-semibold rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all border-none"
+          className="px-5 py-2.5 bg-system-blue hover:bg-system-blue/90 text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all border-none"
         >
           <Plus size={14} />
           <span>Add Row</span>
@@ -225,42 +234,72 @@ export const TableGrid: React.FC = () => {
       </div>
 
       {/* Modern Grid Card Container */}
-      <div className="flex-1 overflow-auto relative rounded-2xl border border-border-secondary/60 bg-bg-secondary/10 shadow-lg min-h-0 flex flex-col">
-        <div className="flex-1 overflow-auto relative">
+      <div className="flex-1 overflow-auto relative rounded-2xl border border-gray-100 dark:border-border-secondary/60 bg-white dark:bg-bg-secondary/10 shadow-xs min-h-0 flex flex-col p-6 space-y-4">
+        
+        {/* Table Top Controls: Dropdown and Search */}
+        <div className="flex items-center justify-between select-none">
+          <div className="flex items-center gap-2 text-xs text-text-secondary font-medium font-sans">
+            <span>Show</span>
+            <select
+              value={gridLimit}
+              onChange={(e) => setGridLimit(Number(e.target.value))}
+              className="px-2 py-1 bg-white dark:bg-bg-primary border border-gray-200 dark:border-border-secondary rounded-lg text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-system-blue"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span>entries</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-3 py-1.5 w-60 bg-white dark:bg-bg-primary border border-gray-200 dark:border-border-secondary rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-system-blue"
+              />
+            </div>
+            <button className="p-2 border border-gray-200 dark:border-border-secondary rounded-xl hover:bg-gray-50 dark:hover:bg-bg-secondary text-text-secondary transition-colors cursor-pointer bg-white dark:bg-bg-primary flex items-center justify-center border-solid">
+              <Filter size={14} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto relative rounded-xl border border-gray-100 dark:border-border-secondary/60">
           <table className="w-full text-left border-collapse min-w-max">
-            <thead className="sticky top-0 bg-bg-secondary/95 backdrop-blur-xs z-20 border-b border-border-secondary shadow-[0_1px_0_0_rgba(0,0,0,0.08)]">
+            <thead className="sticky top-0 bg-gray-50 dark:bg-bg-secondary/40 z-20 border-b border-gray-100 dark:border-border-secondary">
               <tr>
-              <th className="p-3 w-14 text-center text-[10px] font-bold text-text-tertiary uppercase select-none bg-bg-secondary/50">Actions</th>
-              {columns.map((col) => {
-                const isPk = primaryKeys.includes(col.name);
-                const isFk = activeSchema.foreignKeys.some(f => f.columnName === col.name);
-                const isSorted = gridSort?.column === col.name;
+                <th className="p-3 w-20 text-center text-[10px] font-bold text-text-secondary uppercase select-none border-r border-border-secondary/30 sticky left-0 z-20 bg-gray-50 dark:bg-bg-secondary">
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>#</span>
+                    <ArrowUpDown size={11} className="text-text-tertiary shrink-0" />
+                  </div>
+                </th>
+                {columns.map((col) => {
+                  const isPk = primaryKeys.includes(col.name);
+                  const isFk = activeSchema.foreignKeys.some(f => f.columnName === col.name);
+                  const isSorted = gridSort?.column === col.name;
 
-                return (
-                  <th key={col.name} className="p-3 border-r border-border-secondary/60 text-[10px] font-bold text-text-secondary uppercase select-none min-w-[160px] bg-bg-secondary/50">
-                    <div className="flex items-center justify-between">
-                      <button onClick={() => toggleSort(col.name)} className="flex items-center gap-1 hover:text-text-primary transition-colors cursor-pointer font-mono truncate mr-2">
-                        <span className="truncate">{col.name}</span>
-                        <span className="text-[8px] font-semibold text-text-tertiary bg-bg-secondary/70 border border-border-secondary px-1 py-0.5 rounded ml-1 lowercase font-sans shrink-0">
-                          {col.type.split('(')[0]}
-                        </span>
-                        {isPk && <span className="text-[9px] text-system-blue font-sans ml-0.5 shrink-0" title="Primary Key">🔑</span>}
-                        {isFk && <span className="text-[9px] text-system-orange font-sans ml-0.5 shrink-0" title="Foreign Key">🔗</span>}
-                        {isSorted && (
-                          gridSort.direction === 'ASC' 
-                            ? <ChevronUp size={11} className="text-system-blue shrink-0" /> 
-                            : <ChevronDown size={11} className="text-system-blue shrink-0" />
-                        )}
-                      </button>
-
-                      {/* Filter Button */}
-                      <button
-                        onClick={() => setActiveFilterColumn(activeFilterColumn === col.name ? null : col.name)}
-                        className={`p-1 rounded hover:bg-bg-tertiary transition-colors cursor-pointer ${gridFilters[col.name]?.value ? 'text-system-blue' : 'text-text-tertiary'}`}
-                      >
-                        <Filter size={11} />
-                      </button>
-                    </div>
+                  return (
+                    <th key={col.name} className="p-3 border-r border-gray-100 dark:border-border-secondary/30 text-[10px] font-bold text-text-secondary uppercase select-none min-w-[160px] bg-gray-50 dark:bg-bg-secondary/40">
+                      <div className="flex items-center justify-between">
+                        <button onClick={() => toggleSort(col.name)} className="flex items-center gap-1 hover:text-text-primary transition-colors cursor-pointer font-sans normal-case truncate mr-2">
+                          <span className="truncate font-bold text-text-primary">{col.name}</span>
+                          <span className="text-[8px] font-bold text-system-blue bg-system-blue/10 border border-system-blue/15 px-1.5 py-0.5 rounded-md uppercase shrink-0">
+                            {col.type.split('(')[0].replace(/unsigned/i, '')}
+                          </span>
+                          {isPk && <span className="text-[9px] text-system-blue font-sans ml-0.5 shrink-0" title="Primary Key">🔑</span>}
+                          {isFk && <span className="text-[9px] text-system-orange font-sans ml-0.5 shrink-0" title="Foreign Key">🔗</span>}
+                        </button>
+                        <button onClick={() => toggleSort(col.name)} className="text-text-tertiary hover:text-text-primary transition-colors cursor-pointer border-none bg-transparent">
+                          <ArrowUpDown size={11} className={`shrink-0 ${isSorted ? 'text-system-blue font-bold' : 'text-text-tertiary opacity-50'}`} />
+                        </button>
+                      </div>
 
                     {/* Popover Filter UI */}
                     <AnimatePresence>
@@ -369,7 +408,7 @@ export const TableGrid: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              gridRows.map((row, idx) => {
+              filteredRows.map((row, idx) => {
                 const isEditing = editingRowIndex === idx;
 
                 return (

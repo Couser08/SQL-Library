@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useDatabaseStore } from '../store/useDatabaseStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { Database, Search, Upload, LogOut, RefreshCw, Plus, Check, X, Server, Info, Sparkles, Trash2 } from 'lucide-react';
+import { Database, Search, Upload, LogOut, RefreshCw, Plus, Check, X, Server, Trash2 } from 'lucide-react';
 
 interface SidebarProps {
   onOpenImport: () => void;
-  onOpenLaunchTour: () => void;
-  onOpenPatchNotes: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onOpenImport, onOpenLaunchTour, onOpenPatchNotes }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onOpenImport }) => {
   const { 
     tables, 
     selectedTable, 
@@ -251,27 +249,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenImport, onOpenLaunchTour
           <Upload size={14} className="text-system-blue" />
           <span>Import SQL Dump</span>
         </button>
-
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={onOpenPatchNotes}
-            className="relative py-2 bg-bg-primary border border-border-secondary hover:border-system-orange hover:bg-system-orange/5 text-xs text-text-primary font-semibold rounded-lg shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-          >
-            <Sparkles size={13} className="text-system-orange" />
-            <span>What's New</span>
-            {localStorage.getItem('sql_manager_last_seen_patch_version') !== '1.2.0' && (
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-system-blue rounded-full animate-pulse border border-bg-primary" />
-            )}
-          </button>
-
-          <button
-            onClick={onOpenLaunchTour}
-            className="py-2 bg-bg-primary border border-border-secondary hover:border-system-blue hover:bg-system-blue/5 text-xs text-text-primary font-semibold rounded-lg shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-          >
-            <Info size={13} className="text-system-blue" />
-            <span>About App</span>
-          </button>
-        </div>
       </div>
 
       {/* User Footer */}

@@ -6,11 +6,10 @@ import { Sidebar } from './components/Sidebar';
 import { TableGrid } from './components/TableGrid';
 import { SQLEditor } from './components/SQLEditor';
 import { ImportModal } from './components/ImportModal';
-import { LaunchModal } from './components/LaunchModal';
-import { PatchNotesModal } from './components/PatchNotesModal';
+import { UpdateModal } from './components/UpdateModal';
 import { exportDatabaseToSql, downloadFile } from './lib/sqlExporter';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon, Database, Terminal, Download, RefreshCw } from 'lucide-react';
+import { Sun, Moon, Database, Terminal, Download, RefreshCw, PanelLeft } from 'lucide-react';
 
 
 const App: React.FC = () => {
@@ -20,12 +19,14 @@ const App: React.FC = () => {
   // Navigation tabs: 'grid' | 'editor'
   const [activeTab, setActiveTab] = useState<'grid' | 'editor'>('grid');
   
+  // Sidebar collapsed state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   // Import modal state
   const [isImportOpen, setIsImportOpen] = useState(false);
   
-  // Launch and Patch Notes states
-  const [isLaunchOpen, setIsLaunchOpen] = useState(false);
-  const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
+  // Update popup state
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   
   // Dark mode state (defaults to Light theme unless explicitly saved as dark)
   const [darkMode, setDarkMode] = useState(() => {
@@ -42,37 +43,20 @@ const App: React.FC = () => {
     initialize();
   }, [initialize]);
 
-  // Auto-open modals on application launch / version update
+  // Auto-open update popup once on version update / launch
   useEffect(() => {
     if (user) {
-      const hasSeenLaunch = localStorage.getItem('sql_manager_has_seen_launch');
-      if (!hasSeenLaunch) {
-        setIsLaunchOpen(true);
-      } else {
-        const lastSeenPatch = localStorage.getItem('sql_manager_last_seen_patch_version');
-        const CURRENT_VERSION = '1.2.0';
-        if (lastSeenPatch !== CURRENT_VERSION) {
-          setIsPatchNotesOpen(true);
-        }
+      const CURRENT_VERSION = '1.3.0';
+      const lastSeenVersion = localStorage.getItem('sql_manager_version');
+      if (lastSeenVersion !== CURRENT_VERSION) {
+        setIsUpdateOpen(true);
       }
     }
   }, [user]);
 
-  const handleCloseLaunch = () => {
-    localStorage.setItem('sql_manager_has_seen_launch', 'true');
-    setIsLaunchOpen(false);
-    
-    // Check if we should immediately trigger patch notes if it hasn't been seen
-    const lastSeenPatch = localStorage.getItem('sql_manager_last_seen_patch_version');
-    const CURRENT_VERSION = '1.2.0';
-    if (lastSeenPatch !== CURRENT_VERSION) {
-      setIsPatchNotesOpen(true);
-    }
-  };
-
-  const handleClosePatchNotes = () => {
-    localStorage.setItem('sql_manager_last_seen_patch_version', '1.2.0');
-    setIsPatchNotesOpen(false);
+  const handleCloseUpdate = () => {
+    localStorage.setItem('sql_manager_version', '1.3.0');
+    setIsUpdateOpen(false);
   };
 
   useEffect(() => {
@@ -123,41 +107,62 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-bg-primary text-text-primary">
       {/* Sidebar navigation */}
-      <Sidebar 
-        onOpenImport={() => setIsImportOpen(true)} 
-        onOpenLaunchTour={() => setIsLaunchOpen(true)}
-        onOpenPatchNotes={() => setIsPatchNotesOpen(true)}
-      />
+      {/* Sidebar navigation with smooth sliding collapse animation */}
+      <AnimatePresence initial={false}>
+        {!sidebarCollapsed && (
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 256, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: 'tween', duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="h-full border-r border-border-secondary shrink-0 overflow-hidden"
+          >
+            <div className="w-64 h-full shrink-0">
+              <Sidebar onOpenImport={() => setIsImportOpen(true)} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main app space */}
       <div className="flex-1 flex flex-col min-w-0">
         
         {/* Navigation & Controls header */}
         <header className="h-14 border-b border-border-secondary px-6 flex items-center justify-between shrink-0 bg-bg-primary z-10">
-          {/* Tab Selector */}
-          <div className="flex items-center bg-bg-secondary p-0.5 rounded-lg border border-border-secondary">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setActiveTab('grid')}
-              className={`px-4 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all ${
-                activeTab === 'grid'
-                  ? 'bg-bg-primary text-text-primary shadow-xs'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+              className="p-2 text-text-secondary hover:bg-bg-secondary rounded-lg border border-border-secondary cursor-pointer transition-all"
             >
-              <Database size={13} />
-              <span>Table Viewer</span>
+              <PanelLeft size={14} className="text-text-secondary" />
             </button>
-            <button
-              onClick={() => setActiveTab('editor')}
-              className={`px-4 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all ${
-                activeTab === 'editor'
-                  ? 'bg-bg-primary text-text-primary shadow-xs'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              <Terminal size={13} />
-              <span>SQL Editor</span>
-            </button>
+
+            {/* Tab Selector */}
+            <div className="flex items-center bg-bg-secondary p-0.5 rounded-lg border border-border-secondary">
+              <button
+                onClick={() => setActiveTab('grid')}
+                className={`px-4 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all ${
+                  activeTab === 'grid'
+                    ? 'bg-bg-primary text-text-primary shadow-xs'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <Database size={13} />
+                <span>Table Viewer</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('editor')}
+                className={`px-4 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all ${
+                  activeTab === 'editor'
+                    ? 'bg-bg-primary text-text-primary shadow-xs'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <Terminal size={13} />
+                <span>SQL Editor</span>
+              </button>
+            </div>
           </div>
 
           {/* Action buttons */}
@@ -223,16 +228,13 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Import database modal overlay */}
+      {/* Modals overlay */}
       <AnimatePresence>
         {isImportOpen && (
           <ImportModal onClose={() => setIsImportOpen(false)} />
         )}
-        {isLaunchOpen && (
-          <LaunchModal onClose={handleCloseLaunch} />
-        )}
-        {isPatchNotesOpen && (
-          <PatchNotesModal onClose={handleClosePatchNotes} />
+        {isUpdateOpen && (
+          <UpdateModal onClose={handleCloseUpdate} />
         )}
       </AnimatePresence>
     </div>

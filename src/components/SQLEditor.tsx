@@ -22,6 +22,8 @@ export const SQLEditor: React.FC = () => {
   const [rowsAffected, setRowsAffected] = useState<number | null>(null);
   const [executing, setExecuting] = useState(false);
   const [editorRef, setEditorRef] = useState<any>(null);
+  const [historyCollapsed, setHistoryCollapsed] = useState(false);
+
 
   // Destructive query modal state
   const [showDestructiveModal, setShowDestructiveModal] = useState(false);
@@ -205,7 +207,20 @@ export const SQLEditor: React.FC = () => {
             </div>
 
             {/* Run Button and Controls */}
-            <div className="w-1/3 flex justify-end">
+            <div className="w-1/3 flex justify-end items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setHistoryCollapsed(!historyCollapsed)}
+                title={historyCollapsed ? "Show Query History" : "Hide Query History"}
+                className={`p-1.5 rounded-md border transition-all cursor-pointer ${
+                  historyCollapsed 
+                    ? 'text-text-secondary bg-transparent border-border-secondary hover:bg-bg-secondary' 
+                    : 'text-system-blue bg-system-blue/10 border-system-blue/20 hover:bg-system-blue/15'
+                }`}
+              >
+                <Clock size={11} />
+              </button>
+
               <button
                 onClick={handleExecuteClick}
                 disabled={executing}
@@ -251,37 +266,39 @@ export const SQLEditor: React.FC = () => {
               </button>
             )}
           </div>
-          <div className="flex-1 overflow-auto p-4 font-mono text-xs">
+          <div className="flex-1 overflow-auto font-mono text-xs relative">
             {executing ? (
-              <div className="flex flex-col items-center justify-center h-full gap-2 py-8">
+              <div className="flex flex-col items-center justify-center h-full gap-2 py-8 p-4">
                 <div className="w-5 h-5 border-2 border-system-blue border-t-transparent rounded-full animate-spin"></div>
                 <span className="text-text-secondary text-xs">Executing query...</span>
               </div>
             ) : error ? (
-              <div className="p-3.5 bg-red-500/10 border border-red-500/20 text-system-red rounded-xl whitespace-pre-wrap">
+              <div className="m-4 p-3.5 bg-red-500/10 border border-red-500/20 text-system-red rounded-xl whitespace-pre-wrap">
                 {error}
               </div>
             ) : results ? (
               results.length === 0 ? (
-                <div className="text-text-secondary py-8 text-center text-xs">
+                <div className="text-text-secondary py-8 text-center text-xs p-4">
                   Query executed successfully. {rowsAffected !== null ? `${rowsAffected} rows affected.` : 'No result set returned.'}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-border-secondary bg-bg-secondary/40 font-bold">
+                <div className="w-full h-full overflow-x-auto overflow-y-auto max-h-full">
+                  <table className="min-w-full divide-y divide-border-secondary text-left border-collapse text-xs table-auto">
+                    <thead className="sticky top-0 bg-bg-secondary/95 backdrop-blur-xs z-10 shadow-[0_1px_0_0_rgba(0,0,0,0.08)]">
+                      <tr className="border-b border-border-secondary">
                         {Object.keys(results[0]).map((h) => (
-                          <th key={h} className="p-2 border-r border-border-secondary text-text-primary">{h}</th>
+                          <th key={h} className="p-2.5 font-bold text-text-primary border-r border-border-secondary/60 bg-bg-secondary/80 select-none">
+                            {h}
+                          </th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border-secondary">
+                    <tbody className="divide-y divide-border-secondary bg-bg-primary/30">
                       {results.slice(0, 21).map((row, i) => (
-                        <tr key={i} className="hover:bg-bg-secondary/20">
+                        <tr key={i} className="hover:bg-bg-secondary/25 transition-colors">
                           {Object.entries(row).map(([k, v]) => (
-                            <td key={k} className="p-2 border-r border-border-secondary max-w-[200px] truncate" title={String(v)}>
-                              {v === null ? <span className="text-text-tertiary">NULL</span> : String(v)}
+                            <td key={k} className="p-2.5 border-r border-border-secondary/30 max-w-[250px] min-w-[120px] truncate text-text-secondary" title={String(v)}>
+                              {v === null ? <span className="text-text-tertiary italic">NULL</span> : String(v)}
                             </td>
                           ))}
                         </tr>
@@ -302,7 +319,7 @@ export const SQLEditor: React.FC = () => {
               )
 
             ) : (
-              <div className="text-text-tertiary h-full flex items-center justify-center text-xs">
+              <div className="text-text-tertiary h-full flex items-center justify-center text-xs p-4">
                 Run a command or select text and execute to view results.
               </div>
             )}
@@ -310,43 +327,55 @@ export const SQLEditor: React.FC = () => {
         </div>
       </div>
 
-      {/* History Log Pane */}
-      <div className="w-full md:w-64 border-t md:border-t-0 md:border-l border-border-secondary p-5 flex flex-col min-h-0 bg-bg-secondary/15 shrink-0">
-        <div className="flex items-center gap-2 mb-4">
-          <Clock size={15} className="text-text-secondary" />
-          <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Query History</h3>
-        </div>
-        <div className="flex-1 overflow-y-auto space-y-2.5">
-          {queryHistory.length === 0 ? (
-            <div className="text-center text-xs text-text-tertiary py-10">No queries run yet.</div>
-          ) : (
-            queryHistory.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setQuery(item.query)}
-                className="w-full text-left p-3 bg-bg-primary hover:bg-bg-tertiary border border-border-secondary/60 rounded-xl text-xs space-y-1.5 transition-all block cursor-pointer group"
-              >
-                <div className="flex items-center justify-between text-[9px] text-text-tertiary">
-                  <span>{new Date(item.timestamp).toLocaleTimeString()}</span>
-                  {item.success ? (
-                    <span className="text-system-green font-semibold">Success</span>
-                  ) : (
-                    <span className="text-system-red font-semibold">Failed</span>
-                  )}
-                </div>
-                <p className="font-mono text-[11px] truncate text-text-primary group-hover:text-system-blue transition-colors">
-                  {item.query}
-                </p>
-                {item.rowsAffected !== undefined && (
-                  <span className="text-[10px] text-text-secondary block">
-                    {item.rowsAffected} rows affected
-                  </span>
+      {/* History Log Pane with slide-out collapse animation */}
+      <AnimatePresence initial={false}>
+        {!historyCollapsed && (
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 256, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: 'tween', duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="h-full border-t md:border-t-0 md:border-l border-border-secondary flex flex-col min-h-0 bg-bg-secondary/15 shrink-0 overflow-hidden"
+          >
+            <div className="w-64 p-5 flex flex-col min-h-0 h-full shrink-0">
+              <div className="flex items-center gap-2 mb-4">
+                <Clock size={15} className="text-text-secondary" />
+                <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Query History</h3>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-2.5 pr-0.5">
+                {queryHistory.length === 0 ? (
+                  <div className="text-center text-xs text-text-tertiary py-10">No queries run yet.</div>
+                ) : (
+                  queryHistory.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setQuery(item.query)}
+                      className="w-full text-left p-3 bg-bg-primary hover:bg-bg-tertiary border border-border-secondary/60 rounded-xl text-xs space-y-1.5 transition-all block cursor-pointer group"
+                    >
+                      <div className="flex items-center justify-between text-[9px] text-text-tertiary">
+                        <span>{new Date(item.timestamp).toLocaleTimeString()}</span>
+                        {item.success ? (
+                          <span className="text-system-green font-semibold">Success</span>
+                        ) : (
+                          <span className="text-system-red font-semibold">Failed</span>
+                        )}
+                      </div>
+                      <p className="font-mono text-[11px] truncate text-text-primary group-hover:text-system-blue transition-colors">
+                        {item.query}
+                      </p>
+                      {item.rowsAffected !== undefined && (
+                        <span className="text-[10px] text-text-secondary block">
+                          {item.rowsAffected} rows affected
+                        </span>
+                      )}
+                    </button>
+                  ))
                 )}
-              </button>
-            ))
-          )}
-        </div>
-      </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Destructive Warning Confirmation Modal */}
       <AnimatePresence>
